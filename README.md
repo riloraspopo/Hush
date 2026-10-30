@@ -21,13 +21,22 @@
 
 ---
 
+> [!IMPORTANT]
+> ### ⚡ Custom Modification: Direct Root (`su`) Support
+> This build adds native **Root (`su`) support** for rooted Android devices (Magisk, KernelSU, APatch):
+> - **No Wireless Debugging / Pairing:** Skip ads immediately without Wireless debugging, pairing codes, or Wi-Fi.
+> - **One-Tap Activation:** Automatically detects `su` and provides a 1-tap **Grant** / **Use Root instead** button.
+> - **Root-Level Service Lifecycle:** Helper starts automatically on boot and recovers automatically via `su`.
+> - **Root UID (0) IPC Support:** Content provider handshake and privileged actions adapted for root execution with seamless fallback to Wireless debugging or Shizuku for unrooted devices.
+
 Hush runs alongside the official Spotify app. The moment Spotify starts an ad break, Hush restarts
 Spotify in the background — which discards the entire break — and your music continues a few
 seconds later. An optional on-device DNS filter, applied to Spotify only, can also remove video
 ads and the playback freezes they cause.
 
 Since 2.0 Hush is the only app you need: it pairs with Android's Wireless debugging by itself and
-starts its own small helper. Shizuku still works if you already use it.
+starts its own small helper. Rooted phones can use direct root access (`su`) with zero debugging setup,
+and Shizuku still works if you already use it.
 
 <p align="center">
   <img src="docs/screenshots/main-dark.png" width="200" alt="Main screen, dark theme">
@@ -49,7 +58,7 @@ starts its own small helper. Shizuku still works if you already use it.
 | **Sleep timer that survives skips** | Spotify's own timer is lost whenever Spotify restarts, so Hush has its own: 5 minutes to 1 hour, any custom time (hours, minutes, seconds), or end of song. |
 | **Mute mode** | Prefer not to restart Spotify? Hush can mute ads instead, and does so automatically (with one notification) whenever skipping is not ready. |
 | **Spotify-only DNS filter (optional)** | Off by default. Turn on **Block ad servers** to block video-ad hosts and the ad-asset host that can freeze background playback. Other apps and all non-DNS traffic are untouched. |
-| **One app, guided setup** | Hush pairs with Wireless debugging itself: you type a six-digit code into its notification, once. No computer, no second app. |
+| **One app, guided setup** | Hush pairs with Wireless debugging itself: you type a six-digit code into its notification, once. No computer, no second app. On rooted phones, tap **Grant** to skip setup entirely. |
 | **Looks after itself** | If its helper stops, Hush starts it again. After a reboot one tap brings skipping back, or Hush does it by itself if you turn on automatic restart. |
 | **Private** | No accounts, analytics or tracking. Nothing about you leaves the device (with the DNS filter on, only Spotify's own DNS lookups are forwarded; once a day Hush asks GitHub if there is a new version, which you can turn off). |
 
@@ -110,10 +119,11 @@ Numbers vary a little between phones.
 
 ## Requirements
 
-- Android 11 or newer to skip ads. Wi-Fi is needed only to pair and to start Hush's helper (once
+- Android 11 or newer to skip ads via Wireless debugging. Wi-Fi is needed only to pair and to start Hush's helper (once
   after each reboot), because Android turns on Wireless debugging only on Wi-Fi. After that, skipping
   works on mobile data too (Hush turns on USB debugging for this, see Troubleshooting).
-  On Android 8 to 10 Hush can skip through [Shizuku](https://shizuku.rikka.app/) started from a
+  On rooted devices (any supported Android version), root access (`su`) can be used directly without Wireless debugging or Wi-Fi.
+  On unrooted Android 8 to 10 Hush can skip through [Shizuku](https://shizuku.rikka.app/) started from a
   computer, or mutes ads.
 - The official [Spotify](https://play.google.com/store/apps/details?id=com.spotify.music) app (free tier)
 
@@ -138,15 +148,17 @@ https://github.com/user-attachments/assets/b7713aba-1956-459b-b680-6d76fd52765b
    | Notifications | Status, a **Turn off** button, and problem alerts |
    | Unrestricted battery | Keep working while the phone is locked |
 
-3. Hush opens **Set up skipping**. It takes about two minutes, once:
-   1. **Turn on Developer options:** tap **Open**, then tap **Build number** seven times (in
-      About phone). Come back to Hush.
-   2. **Pair Hush:** tap **Pair**. Hush opens Developer options. Turn on **Wireless debugging**
-      (allow it on your Wi-Fi), open it and tap **Pair device with pairing code**.
-   3. Stay on that screen: Hush's **Enter the pairing code** notification pops up over it (if you
-      miss it, pull down the notification shade and expand it). Tap **Enter code** and type the six
-      digits shown in Settings. Hush pairs and starts its helper; the notification changes to
-      **Skipping is ready**.
+3. Hush opens **Set up skipping**:
+   - **Rooted device:** If root (`su`) is detected, Hush shows a **Root access** step with a **Grant** button. Tap **Grant** (or "Use Root instead" in Set up skipping) to authorize the helper instantly — no Wireless debugging, Wi-Fi or pairing code required.
+   - **Non-rooted device:** Takes about two minutes, once:
+     1. **Turn on Developer options:** tap **Open**, then tap **Build number** seven times (in
+        About phone). Come back to Hush.
+     2. **Pair Hush:** tap **Pair**. Hush opens Developer options. Turn on **Wireless debugging**
+        (allow it on your Wi-Fi), open it and tap **Pair device with pairing code**.
+     3. Stay on that screen: Hush's **Enter the pairing code** notification pops up over it (if you
+        miss it, pull down the notification shade and expand it). Tap **Enter code** and type the six
+        digits shown in Settings. Hush pairs and starts its helper; the notification changes to
+        **Skipping is ready**.
 
    Some phone makers need one extra switch in Developer options; Hush shows that step only on
    those phones. Already using Shizuku? Hush uses it too, and you can skip this.
