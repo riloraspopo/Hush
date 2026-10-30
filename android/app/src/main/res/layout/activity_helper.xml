@@ -131,5 +131,12 @@
             style="@style/TextButton"
             android:layout_marginTop="4dp"
             android:text="@string/hs_use_shizuku" />
+
+        <TextView
+            android:id="@+id/use_root"
+            style="@style/TextButton"
+            android:layout_marginTop="4dp"
+            android:text="@string/hs_use_root"
+            android:visibility="gone" />
     </LinearLayout>
 </ScrollView>

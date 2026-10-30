@@ -72,6 +72,14 @@ public class HelperSetupActivity extends Activity {
             return false;
         });
         findViewById(R.id.use_shizuku).setOnClickListener(v -> startActivity(new Intent(this, ShizukuSetupActivity.class)));
+        View useRoot = findViewById(R.id.use_root);
+        if (Shell.hasRoot()) {
+            useRoot.setVisibility(View.VISIBLE);
+            useRoot.setOnClickListener(v -> HelperControl.startRootAsync(this, success -> {
+                if (success) finish();
+                else refresh();
+            }));
+        }
     }
 
     @Override protected void onResume() {

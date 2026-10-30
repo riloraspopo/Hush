@@ -8,6 +8,7 @@ public final class HelperProtocol {
     public static final String DESCRIPTOR = "io.coldmew.hush.IHelper";
     public static final int VERSION = 4;
     public static final int SHELL_UID = 2000;
+    public static final int ROOT_UID = 0;
 
     public static final String AUTHORITY_SUFFIX = ".helper";
     public static final String METHOD_HELLO = "hello";

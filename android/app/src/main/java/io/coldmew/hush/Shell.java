@@ -14,8 +14,41 @@ import rikka.shizuku.Shizuku;
 // runs the very same command line.
 final class Shell {
     static final String SHIZUKU = "moe.shizuku.privileged.api";
+    private static volatile Boolean hasSu;
+    private static volatile boolean rootGranted;
 
     private Shell() {}
+
+    static boolean hasRoot() {
+        if (hasSu != null) return hasSu;
+        for (String p : new String[]{"/system/bin/su", "/system/xbin/su", "/sbin/su", "/data/adb/ksu/bin/su", "/data/adb/ap/bin/su"}) {
+            if (new java.io.File(p).exists()) return hasSu = true;
+        }
+        String path = System.getenv("PATH");
+        if (path != null) {
+            for (String dir : path.split(":")) {
+                if (new java.io.File(dir, "su").exists()) return hasSu = true;
+            }
+        }
+        return hasSu = false;
+    }
+
+    static boolean rootGranted() { return rootGranted; }
+    static void setRootGranted(boolean v) { rootGranted = v; }
+
+    // Requests/tests root access; runs `su -c id`. Must be called off the main thread.
+    static boolean testRoot() {
+        if (rootGranted) return true;
+        if (!hasRoot()) return false;
+        try {
+            Process p = Runtime.getRuntime().exec(new String[]{"su", "-c", "id"});
+            if (p.waitFor() == 0) {
+                rootGranted = true;
+                return true;
+            }
+        } catch (Throwable ignored) {}
+        return false;
+    }
 
     static boolean installed(android.content.Context c) {
         try { c.getPackageManager().getPackageInfo(SHIZUKU, 0); return true; }
@@ -27,9 +60,9 @@ final class Shell {
         try { return Shizuku.pingBinder(); } catch (Throwable e) { return false; }
     }
 
-    // True if any backend can run privileged commands (Hush's helper or Shizuku).
+    // True if any backend can run privileged commands (Hush's helper, Shizuku, or Root).
     static boolean ready() {
-        return HushHelper.ready() || shizukuReady();
+        return HushHelper.ready() || shizukuReady() || rootGranted;
     }
 
     static boolean shizukuReady() {
@@ -50,7 +83,25 @@ final class Shell {
         String out = HushHelper.run(action, arg);
         if (out != null) return out;
         String cmd = Commands.build(action, arg);
-        return shizukuReady() ? sh(cmd) : "";
+        if (shizukuReady()) return sh(cmd);
+        if (rootGranted) return su(cmd);
+        return "";
+    }
+
+    private static String su(String cmd) {
+        try {
+            Process p = Runtime.getRuntime().exec(new String[]{"su", "-c", cmd});
+            StringBuilder out = new StringBuilder();
+            try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+                String line;
+                while ((line = r.readLine()) != null) out.append(line).append('\n');
+            }
+            p.waitFor();
+            return out.toString().trim();
+        } catch (Throwable e) {
+            Log.w(Hush.TAG, "su failed: " + e.getClass().getSimpleName());
+            return "";
+        }
     }
 
     // Runs `sh -c cmd` through Shizuku and returns stdout ("" on failure). Shizuku.newProcess is

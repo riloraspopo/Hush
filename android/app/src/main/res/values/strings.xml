@@ -196,6 +196,10 @@
     <string name="setup_skip_resume">Paused because Wireless debugging is off. Tap Resume.</string>
     <string name="action_resume">Resume</string>
     <string name="v_skip_shizuku">Skip (Shizuku)</string>
+    <string name="v_skip_root">Skip (Root)</string>
+    <string name="setup_root">Root access</string>
+    <string name="setup_root_desc">Root detected. Tap Grant to skip ads without Wireless debugging or Shizuku.</string>
+    <string name="action_grant">Grant</string>
 
     <string name="hs_title">Set up skipping</string>
     <string name="hs_intro">To skip an ad, Hush restarts Spotify. Android allows that only to tools you approve once through Wireless debugging. Hush pairs with it by itself: no other app and no computer needed, and nothing leaves this phone.</string>
@@ -225,6 +229,7 @@
     <string name="hs_ready_action">Start</string>
     <string name="hs_note">Pairing gives Hush\'s helper only the few actions it needs (restart Spotify, keep it audible, bring back your app). You can remove Hush under Paired devices in Wireless debugging at any time.</string>
     <string name="hs_use_shizuku">Use Shizuku instead</string>
+    <string name="hs_use_root">Use Root instead</string>
 
     <string name="pair_searching_title">Pairing Hush</string>
     <string name="pair_searching_text">In Wireless debugging, tap Pair device with pairing code.</string>

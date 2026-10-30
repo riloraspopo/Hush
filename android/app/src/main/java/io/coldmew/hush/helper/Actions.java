@@ -82,7 +82,8 @@ final class Actions {
                 if (!m.getName().equals("moveTaskToFront")) continue;
                 Class<?>[] p = m.getParameterTypes();
                 try {
-                    if (p.length == 5) { m.invoke(service, null, "com.android.shell", task, 0, null); return true; }
+                    String caller = Process.myUid() == HelperProtocol.ROOT_UID ? "android" : "com.android.shell";
+                    if (p.length == 5) { m.invoke(service, null, caller, task, 0, null); return true; }
                     if (p.length == 3) { m.invoke(service, task, 0, null); return true; }   // older versions
                 } catch (Throwable t) {
                     System.err.println("hush_helper: moveTaskToFront failed: " + t);

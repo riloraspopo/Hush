@@ -31,8 +31,8 @@ public final class Helper {
             else if (a.startsWith("--authority=")) authority = a.substring(12);
         }
         if (token == null || authority == null || !authority.endsWith(HelperProtocol.AUTHORITY_SUFFIX)
-                || hushUid <= 0 || Process.myUid() != HelperProtocol.SHELL_UID) {
-            System.err.println("hush_helper: bad arguments or not running as shell");
+                || hushUid <= 0 || (Process.myUid() != HelperProtocol.SHELL_UID && Process.myUid() != HelperProtocol.ROOT_UID)) {
+            System.err.println("hush_helper: bad arguments or not running as shell/root");
             System.exit(2);
         }
         exemptHiddenApis();   // so the reflective calls to Android's internal services work here

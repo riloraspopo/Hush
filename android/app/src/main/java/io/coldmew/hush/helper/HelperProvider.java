@@ -18,8 +18,9 @@ public final class HelperProvider extends ContentProvider {
 
     @Override public Bundle call(String method, String arg, Bundle extras) {
         if (!HelperProtocol.METHOD_HELLO.equals(method) || extras == null) return null;
-        // Only the shell user (the helper) may hand a binder over.
-        if (Binder.getCallingUid() != HelperProtocol.SHELL_UID) return null;
+        // Only the shell user or root (the helper) may hand a binder over.
+        int caller = Binder.getCallingUid();
+        if (caller != HelperProtocol.SHELL_UID && caller != HelperProtocol.ROOT_UID) return null;
 
         extras.setClassLoader(getClass().getClassLoader());
         IBinder helperBinder = extras.getBinder(HelperProtocol.EXTRA_BINDER);

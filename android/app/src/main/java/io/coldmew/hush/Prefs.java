@@ -60,6 +60,8 @@ final class Prefs {
     // Hush's own helper: paired with Wireless debugging; automatic restart after a reboot (opt-in);
     // the per-phone test result (TEST_* below).
     static final String TEST_NONE = "", TEST_SAFE = "safe", TEST_NEEDS_ON = "needs_on";
+    boolean useRoot() { return sp.getBoolean("use_root", false); }
+    void useRoot(boolean v) { sp.edit().putBoolean("use_root", v).apply(); }
     boolean paired() { return sp.getBoolean("paired", false); }
     void paired(boolean v) { sp.edit().putBoolean("paired", v).apply(); }
     // The user went through the Developer options step (newer Android versions do not tell apps).

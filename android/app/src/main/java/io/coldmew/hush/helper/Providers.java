@@ -36,24 +36,26 @@ final class Providers {
     private static Bundle callProvider(Object provider, String authority, String method, Bundle extras) throws Exception {
         Class<?> c = provider.getClass();
         int sdk = Helper.sdk();
+        int uid = android.os.Process.myUid();
+        String pkg = uid == HelperProtocol.ROOT_UID ? "android" : SHELL_PACKAGE;
         if (android.os.Build.VERSION.SDK_INT >= 31) {
             for (Method m : c.getMethods()) {
                 Class<?>[] p = m.getParameterTypes();
                 if (m.getName().equals("call") && p.length == 5 && p[0] == AttributionSource.class) {
-                    AttributionSource src = new AttributionSource.Builder(HelperProtocol.SHELL_UID)
-                            .setPackageName(SHELL_PACKAGE).build();
+                    AttributionSource src = new AttributionSource.Builder(uid)
+                            .setPackageName(pkg).build();
                     return (Bundle) m.invoke(provider, src, authority, method, null, extras);
                 }
             }
         }
         if (sdk >= 30) {
-            try { return (Bundle) Helper.method(c, "call", 6).invoke(provider, SHELL_PACKAGE, null, authority, method, null, extras); }
+            try { return (Bundle) Helper.method(c, "call", 6).invoke(provider, pkg, null, authority, method, null, extras); }
             catch (NoSuchMethodException ignored) {}
         }
         if (sdk >= 29) {
-            try { return (Bundle) Helper.method(c, "call", 5).invoke(provider, SHELL_PACKAGE, authority, method, null, extras); }
+            try { return (Bundle) Helper.method(c, "call", 5).invoke(provider, pkg, authority, method, null, extras); }
             catch (NoSuchMethodException | IllegalArgumentException ignored) {}
         }
-        return (Bundle) Helper.method(c, "call", 4).invoke(provider, SHELL_PACKAGE, method, null, extras);
+        return (Bundle) Helper.method(c, "call", 4).invoke(provider, pkg, method, null, extras);
     }
 }

@@ -326,7 +326,8 @@ public class MainActivity extends Activity {
     // it runs and only needs Hush's permission; otherwise the one-time setup.
     private void afterTurnOn() {
         if (!Prefs.MODE_RESTART.equals(prefs.mode()) || Shell.ready()) return;
-        if (Shell.running() && !prefs.paired()) Shell.requestPermission();
+        if (prefs.useRoot()) HelperControl.startRootAsync(this, success -> refresh());
+        else if (Shell.running() && !prefs.paired()) Shell.requestPermission();
         else if (prefs.paired() && HelperControl.supported()) HelperControl.ensure(this, true, true);
         else openSkipSetup();
     }
@@ -433,7 +434,8 @@ public class MainActivity extends Activity {
             value(R.id.st_detect, offMode ? R.string.v_off : listener ? R.string.v_active : R.string.v_no_access,
                     offMode ? R.color.neutral : listener ? R.color.good : R.color.bad);
             value(R.id.st_skip, offMode ? R.string.v_off : muteMode ? R.string.v_mute : !shizuku ? R.string.v_mute_fallback
-                            : HushHelper.ready() ? R.string.v_skip : R.string.v_skip_shizuku,
+                            : HushHelper.ready() ? (prefs.useRoot() ? R.string.v_skip_root : R.string.v_skip)
+                            : Shell.shizukuReady() ? R.string.v_skip_shizuku : R.string.v_skip_root,
                     offMode ? R.color.neutral : skipMode && !shizuku ? R.color.warn : R.color.good);
             value(R.id.st_dns, !prefs.dns() ? R.string.v_off : dnsRunning ? R.string.v_running : R.string.v_stopped,
                     !prefs.dns() ? R.color.neutral : dnsRunning ? R.color.good : R.color.warn);
@@ -545,6 +547,19 @@ public class MainActivity extends Activity {
     // Hush resumes with one tap (or by itself once Wireless debugging is on); everyone else gets the
     // one-time setup. Android 8-10 have no Wireless debugging: Shizuku only.
     private void renderSkipSetup() {
+        if (Shell.hasRoot() || prefs.useRoot()) {
+            setupRow(R.string.setup_root, R.string.setup_root_desc, R.string.action_grant, v -> {
+                v.setEnabled(false);
+                HelperControl.startRootAsync(this, success -> {
+                    if (!success) {
+                        v.setEnabled(true);
+                        toast(R.string.helper_notice_fix);
+                    }
+                    refresh();
+                });
+            });
+            return;
+        }
         boolean shizukuUser = Shell.installed(this) && !prefs.paired();
         if (!HelperControl.supported() || shizukuUser && Shell.running()) {
             int desc = !Shell.installed(this) ? R.string.setup_shizuku_missing

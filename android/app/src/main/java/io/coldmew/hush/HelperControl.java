@@ -92,7 +92,7 @@ final class HelperControl {
     // Skipping should run through Hush's helper.
     static boolean wanted(Context c) {
         Prefs p = new Prefs(c);
-        return supported() && p.enabled() && Prefs.MODE_RESTART.equals(p.mode()) && p.paired();
+        return (supported() || p.useRoot()) && p.enabled() && Prefs.MODE_RESTART.equals(p.mode()) && (p.paired() || p.useRoot());
     }
 
     static Result lastResult() { return last; }
@@ -147,6 +147,43 @@ final class HelperControl {
     }
 
     // ---- starting ----
+
+    // Starts the helper using su (root). No Wireless debugging or Wi-Fi needed.
+    static synchronized Result startRoot(Context ctx) {
+        Context c = ctx.getApplicationContext();
+        if (HushHelper.ready()) return Result.READY;
+        try {
+            String cmd = HushHelper.startCommand(c);
+            Runtime.getRuntime().exec(new String[]{"su", "-c", cmd});
+            long end = SystemClock.elapsedRealtime() + 8000;
+            while (!HushHelper.ready() && SystemClock.elapsedRealtime() < end) SystemClock.sleep(50);
+            if (HushHelper.ready()) {
+                new Prefs(c).useRoot(true);
+                new Prefs(c).paired(true);
+                Shell.setRootGranted(true);
+                last = Result.READY;
+                lastError = "";
+                Log.i(Hush.TAG, "helper started via root");
+                return Result.READY;
+            }
+            lastError = "helper did not connect via root";
+        } catch (Exception e) {
+            lastError = e.getClass().getSimpleName() + ": " + e.getMessage();
+        }
+        return Result.FAILED;
+    }
+
+    interface RootCallback { void onResult(boolean success); }
+
+    static void startRootAsync(Context ctx, RootCallback done) {
+        Context c = ctx.getApplicationContext();
+        worker.execute(() -> {
+            Result r = startRoot(c);
+            main.post(() -> {
+                if (done != null) done.onResult(r == Result.READY);
+            });
+        });
+    }
 
     // Blocking (never on the main thread). mayEnable: Hush may turn Wireless debugging on first.
     static synchronized Result start(Context ctx, boolean mayEnable) {
@@ -261,8 +298,17 @@ final class HelperControl {
 
     private static void onDied(Context c) {
         if (!wanted(c) || phoneTestRunning) return;
-        long now = SystemClock.elapsedRealtime();
         Prefs p = new Prefs(c);
+        if (p.useRoot()) {
+            worker.execute(() -> {
+                SystemClock.sleep(1000);
+                Result r = startRoot(c);
+                if (r == Result.READY) Events.add(c, Events.INFO, "Skipping helper restarted");
+                else notifyStopped(c, r);
+            });
+            return;
+        }
+        long now = SystemClock.elapsedRealtime();
         synchronized (restarts) {
             while (!restarts.isEmpty() && now - restarts.peekFirst() > WINDOW) restarts.pollFirst();
             if (restarts.size() >= MAX_RESTARTS) {
@@ -300,6 +346,16 @@ final class HelperControl {
         Context c = ctx.getApplicationContext();
         if (!wanted(c) || HushHelper.ready() || booting) return;
         Prefs p = new Prefs(c);
+        if (p.useRoot()) {
+            booting = true;
+            worker.execute(() -> {
+                try {
+                    Result r = startRoot(c);
+                    if (r != Result.READY) notifyStopped(c, r);
+                } finally { booting = false; }
+            });
+            return;
+        }
         if (p.updating() && canToggleDebugging(c) && onWifi(c)) {
             // Hush just updated itself (the user tapped Update): bring skipping back the same way as
             // the automatic restart, and leave Wireless debugging as it was before.
@@ -467,8 +523,9 @@ final class HelperControl {
     static String diagnostics(Context c) {
         Prefs p = new Prefs(c);
         int[] ping = HushHelper.ping();
-        return "backend: " + (HushHelper.ready() ? "hush-helper v" + (ping == null ? "?" : ping[0])
-                        : Shell.shizukuReady() ? "shizuku" : "none")
+        return "backend: " + (HushHelper.ready() ? (p.useRoot() ? "hush-helper (root) v" : "hush-helper v") + (ping == null ? "?" : ping[0])
+                        : Shell.shizukuReady() ? "shizuku" : Shell.rootGranted() ? "root" : "none")
+                + "\nroot: " + p.useRoot()
                 + "\npaired: " + p.paired()
                 + "\nauto restart: " + p.autoRestart() + " (can switch debugging: " + canToggleDebugging(c) + ")"
                 + "\nper-phone test: " + (p.phoneTest().isEmpty() ? "not run" : p.phoneTest())
